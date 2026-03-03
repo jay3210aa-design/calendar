@@ -179,7 +179,7 @@
       const hasEvents = tasks.some(t => t.date === ds);
       const chip = document.createElement('div');
       chip.className = `day-chip${ds===selectedDate?' active':''}${hasEvents?' has-events':''}`;
-      chip.innerHTML = `<div class="day-label">${DAYS_ZH[d.getDay()]}</div><div class="day-num">${d.getDate()}</div>`;
+      chip.innerHTML = `<div class="day-label">${DAYS_ZH[d.getDay()]}</div><div style="font-size:9px;color:#fff;font-family:'DM Mono',monospace;line-height:1.2;opacity:0.7;">${MONTHS_ZH[d.getMonth()]}</div><div class="day-num">${d.getDate()}</div>`;
       chip.onclick = () => selectDate(ds);
       strip.appendChild(chip);
     }
