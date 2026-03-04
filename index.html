@@ -70,6 +70,8 @@
   .p-low-label { background:rgba(62,207,142,0.15); color:#3ecf8e; }
   .btn-delete { background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:20px; padding:2px 6px; border-radius:6px; transition:all 0.15s; flex-shrink:0; }
   .btn-delete:hover { color:var(--danger); }
+  .btn-reminder { background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:20px; padding:2px 6px; border-radius:6px; transition:all 0.15s; flex-shrink:0; }
+  .btn-reminder:hover { color:var(--accent); }
   .email-section { background:var(--surface); border-radius:var(--radius); padding:16px; border:1px solid var(--border); margin-top:24px; }
   .email-header { display:flex; align-items:center; gap:12px; margin-bottom:14px; }
   .email-icon { width:42px; height:42px; border-radius:10px; background:rgba(240,165,0,0.15); display:flex; align-items:center; justify-content:center; font-size:22px; }
@@ -265,6 +267,36 @@
     showToast('📧 正在開啟郵件應用...');
   }
   function saveTasks(){localStorage.setItem('calendarTasks',JSON.stringify(tasks));}
+  function addToReminders(id){
+    const t=tasks.find(t=>t.id===id);
+    if(!t) return;
+    const dateStr=t.date.replace(/-/g,'');
+    const timeStr=t.time?t.time.replace(':','')+'00':'090000';
+    const dtStart=dateStr+'T'+timeStr;
+    const ics=[
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//MyCalendar//TW',
+      'BEGIN:VEVENT',
+      'SUMMARY:'+t.title,
+      'DESCRIPTION:'+(t.note||''),
+      'DTSTART:'+dtStart,
+      'DTEND:'+dtStart,
+      'BEGIN:VALARM',
+      'TRIGGER:PT0S',
+      'ACTION:DISPLAY',
+      'DESCRIPTION:提醒：'+t.title,
+      'END:VALARM',
+      'END:VEVENT',
+      'END:VCALENDAR'
+    ].join('\r\n');
+    const blob=new Blob([ics],{type:'text/calendar;charset=utf-8'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url; a.download=t.title+'.ics'; a.click();
+    URL.revokeObjectURL(url);
+    showToast('⏰ 請用檔案App開啟，加入行事曆！');
+  }
   function goToToday(){
     const today=getTodayStr();
     if(selectedDate===today){showToast('📅 已經是今天了！');return;}
