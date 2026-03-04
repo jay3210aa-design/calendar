@@ -96,7 +96,7 @@
     <div class="app-title">MY CALENDAR</div>
     <div class="today-badge" id="todayBadge">--</div>
   </div>
-  <div id="currentDateDisplay" style="font-size:30px;font-weight:700;line-height:1.1;margin-bottom:4px;">載入中...</div>
+  <div id="currentDateDisplay" onclick="goToToday()" style="font-size:30px;font-weight:700;line-height:1.1;margin-bottom:4px;cursor:pointer;user-select:none;" title="點我回到今天">載入中...</div>
   <div class="week-strip" id="weekStrip"></div>
 </div>
 <div class="content">
@@ -265,6 +265,12 @@
     showToast('📧 正在開啟郵件應用...');
   }
   function saveTasks(){localStorage.setItem('calendarTasks',JSON.stringify(tasks));}
+  function goToToday(){
+    const today=getTodayStr();
+    if(selectedDate===today){showToast('📅 已經是今天了！');return;}
+    selectDate(today);
+    showToast('📅 已跳回今天');
+  }
   function updateNotifUI(){
     const btn=document.getElementById('notifBtn');
     const status=document.getElementById('notifStatus');
