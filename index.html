@@ -123,13 +123,6 @@
   </div>
   <div class="section-title" id="taskDateLabel">今日事項</div>
   <div class="task-list" id="taskList"></div>
-  <div id="notifSection" class="email-section" style="margin-bottom:0">
-    <div class="email-header">
-      <div class="email-icon">🔔</div>
-      <div><div class="email-title">通知提醒</div><div class="email-subtitle" id="notifStatus">檢查通知權限中...</div></div>
-    </div>
-    <button class="btn-email" id="notifBtn" onclick="requestNotifPermission()" style="border-color:#3ecf8e;color:#3ecf8e;">🔔 開啟通知權限</button>
-  </div>
   <div class="email-section">
     <div class="email-header">
       <div class="email-icon">✉️</div>
@@ -157,16 +150,6 @@
     document.getElementById('currentDateDisplay').innerHTML=`${today.getFullYear()} / <span style="color:var(--accent)">${MONTHS_ZH[today.getMonth()]} ${today.getDate()}日</span>`;
     renderWeekStrip();renderTasks();updateStats();
     setInterval(checkReminders,60000);checkReminders();
-    if('serviceWorker'in navigator){
-    navigator.serviceWorker.register('sw.js').then(reg=>{
-      console.log('SW registered');
-      if(Notification.permission==='default'){
-        Notification.requestPermission().then(p=>{ if(p==='granted') scheduleNotifications(); });
-      } else if(Notification.permission==='granted'){
-        scheduleNotifications();
-      }
-    });
-  }
   }
   function renderWeekStrip(){
     const strip=document.getElementById('weekStrip');strip.innerHTML='';
@@ -225,6 +208,7 @@
           </div>
           ${t.note?`<div class="task-note">${t.note}</div>`:''}
         </div>
+        <button class="btn-reminder" onclick="addToReminders(${t.id})" title="加入iPhone提醒">📲</button>
         <button class="btn-delete" onclick="deleteTask(${t.id})">✕</button>
       </div>`;
     }).join('');
@@ -303,46 +287,7 @@
     selectDate(today);
     showToast('📅 已跳回今天');
   }
-  function updateNotifUI(){
-    const btn=document.getElementById('notifBtn');
-    const status=document.getElementById('notifStatus');
-    if(!('Notification'in window)){status.textContent='此裝置不支援通知';btn.style.display='none';return;}
-    if(Notification.permission==='granted'){status.textContent='✅ 通知已開啟，時間到會自動提醒';btn.textContent='✅ 通知已開啟';btn.disabled=true;btn.style.opacity='0.5';}
-    else if(Notification.permission==='denied'){status.textContent='❌ 通知已被封鎖，請到 iPhone 設定手動開啟';btn.textContent='❌ 通知被封鎖';btn.disabled=true;btn.style.opacity='0.5';}
-    else{status.textContent='尚未開啟，點下方按鈕允許通知';}
-  }
-  function requestNotifPermission(){
-    if(!('Notification'in window)){showToast('此裝置不支援通知');return;}
-    Notification.requestPermission().then(p=>{
-      updateNotifUI();
-      if(p==='granted'){showToast('🔔 通知已開啟！');scheduleNotifications();}
-      else if(p==='denied'){showToast('❌ 請到設定手動開啟通知');}
-    });
-  }
   function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
-  function scheduleNotifications(){
-    if(!('serviceWorker'in navigator))return;
-    navigator.serviceWorker.ready.then(reg=>{
-      const now=new Date();
-      const today=getTodayStr();
-      tasks.filter(t=>t.date===today&&t.time&&!t.done).forEach(t=>{
-        const [h,m]=t.time.split(':').map(Number);
-        const target=new Date();
-        target.setHours(h,m,0,0);
-        const delay=target-now;
-        if(delay>0){
-          reg.active&&reg.active.postMessage({
-            type:'SCHEDULE_NOTIFICATION',
-            id:'task-'+t.id,
-            title:'⏰ '+t.time+' 提醒',
-            body:t.title+(t.note?' — '+t.note:''),
-            delay:delay
-          });
-        }
-      });
-    });
-  }
-  updateNotifUI();
   document.getElementById('taskTitle').addEventListener('keydown',e=>{if(e.key==='Enter')addTask();});
   init();
 </script>
