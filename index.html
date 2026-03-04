@@ -121,6 +121,13 @@
   </div>
   <div class="section-title" id="taskDateLabel">今日事項</div>
   <div class="task-list" id="taskList"></div>
+  <div id="notifSection" class="email-section" style="margin-bottom:0">
+    <div class="email-header">
+      <div class="email-icon">🔔</div>
+      <div><div class="email-title">通知提醒</div><div class="email-subtitle" id="notifStatus">檢查通知權限中...</div></div>
+    </div>
+    <button class="btn-email" id="notifBtn" onclick="requestNotifPermission()" style="border-color:#3ecf8e;color:#3ecf8e;">🔔 開啟通知權限</button>
+  </div>
   <div class="email-section">
     <div class="email-header">
       <div class="email-icon">✉️</div>
@@ -258,6 +265,22 @@
     showToast('📧 正在開啟郵件應用...');
   }
   function saveTasks(){localStorage.setItem('calendarTasks',JSON.stringify(tasks));}
+  function updateNotifUI(){
+    const btn=document.getElementById('notifBtn');
+    const status=document.getElementById('notifStatus');
+    if(!('Notification'in window)){status.textContent='此裝置不支援通知';btn.style.display='none';return;}
+    if(Notification.permission==='granted'){status.textContent='✅ 通知已開啟，時間到會自動提醒';btn.textContent='✅ 通知已開啟';btn.disabled=true;btn.style.opacity='0.5';}
+    else if(Notification.permission==='denied'){status.textContent='❌ 通知已被封鎖，請到 iPhone 設定手動開啟';btn.textContent='❌ 通知被封鎖';btn.disabled=true;btn.style.opacity='0.5';}
+    else{status.textContent='尚未開啟，點下方按鈕允許通知';}
+  }
+  function requestNotifPermission(){
+    if(!('Notification'in window)){showToast('此裝置不支援通知');return;}
+    Notification.requestPermission().then(p=>{
+      updateNotifUI();
+      if(p==='granted'){showToast('🔔 通知已開啟！');scheduleNotifications();}
+      else if(p==='denied'){showToast('❌ 請到設定手動開啟通知');}
+    });
+  }
   function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
   function scheduleNotifications(){
     if(!('serviceWorker'in navigator))return;
@@ -281,6 +304,7 @@
       });
     });
   }
+  updateNotifUI();
   document.getElementById('taskTitle').addEventListener('keydown',e=>{if(e.key==='Enter')addTask();});
   init();
 </script>
