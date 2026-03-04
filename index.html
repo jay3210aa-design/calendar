@@ -4,6 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>我的行事曆</title>
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="行事曆">
+<meta name="theme-color" content="#f0a500">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -143,7 +148,16 @@
     document.getElementById('currentDateDisplay').innerHTML=`${today.getFullYear()} / <span style="color:var(--accent)">${MONTHS_ZH[today.getMonth()]} ${today.getDate()}日</span>`;
     renderWeekStrip();renderTasks();updateStats();
     setInterval(checkReminders,60000);checkReminders();
-    if('Notification'in window&&Notification.permission==='default')Notification.requestPermission();
+    if('serviceWorker'in navigator){
+    navigator.serviceWorker.register('sw.js').then(reg=>{
+      console.log('SW registered');
+      if(Notification.permission==='default'){
+        Notification.requestPermission().then(p=>{ if(p==='granted') scheduleNotifications(); });
+      } else if(Notification.permission==='granted'){
+        scheduleNotifications();
+      }
+    });
+  }
   }
   function renderWeekStrip(){
     const strip=document.getElementById('weekStrip');strip.innerHTML='';
@@ -175,7 +189,7 @@
     document.getElementById('taskTime').value='';
     document.getElementById('taskNote').value='';
     document.getElementById('taskPriority').value='mid';
-    renderWeekStrip();renderTasks();updateStats();showToast('✅ 事項已新增！');
+    renderWeekStrip();renderTasks();updateStats();showToast('✅ 事項已新增！');scheduleNotifications();
   }
   function toggleDone(id){const t=tasks.find(t=>t.id===id);if(t){t.done=!t.done;saveTasks();renderTasks();updateStats();if(t.done)showToast('🎉 完成！繼續加油');}}
   function deleteTask(id){tasks=tasks.filter(t=>t.id!==id);saveTasks();renderWeekStrip();renderTasks();updateStats();showToast('🗑️ 已刪除');}
@@ -245,6 +259,28 @@
   }
   function saveTasks(){localStorage.setItem('calendarTasks',JSON.stringify(tasks));}
   function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+  function scheduleNotifications(){
+    if(!('serviceWorker'in navigator))return;
+    navigator.serviceWorker.ready.then(reg=>{
+      const now=new Date();
+      const today=getTodayStr();
+      tasks.filter(t=>t.date===today&&t.time&&!t.done).forEach(t=>{
+        const [h,m]=t.time.split(':').map(Number);
+        const target=new Date();
+        target.setHours(h,m,0,0);
+        const delay=target-now;
+        if(delay>0){
+          reg.active&&reg.active.postMessage({
+            type:'SCHEDULE_NOTIFICATION',
+            id:'task-'+t.id,
+            title:'⏰ '+t.time+' 提醒',
+            body:t.title+(t.note?' — '+t.note:''),
+            delay:delay
+          });
+        }
+      });
+    });
+  }
   document.getElementById('taskTitle').addEventListener('keydown',e=>{if(e.key==='Enter')addTask();});
   init();
 </script>
